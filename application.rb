@@ -1,13 +1,13 @@
 require 'sinatra'
 require 'json'
-require_relative 'lib/fetcher'
+require_relative 'lib/results_parser'
 
 get '/' do
   'Up and running'
 end
 
 get '/api/scores' do
-  Fetcher::get_current_scores.to_json
+  ResultsParser::get_current_scores.to_json
 end
 
 get '/api/scores/:date' do |date|
