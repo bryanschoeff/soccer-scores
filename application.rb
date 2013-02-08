@@ -1,13 +1,14 @@
 require 'sinatra'
 require 'json'
-require_relative 'lib/results_parser'
+require_relative 'lib/current_results_parser'
+require_relative 'lib/match_stats_parser'
 
 get '/' do
   'Up and running'
 end
 
 get '/api/scores' do
-  ResultsParser::get_current_scores.to_json
+  CurrentResultsParser::get_current_scores.to_json
 end
 
 get '/api/scores/:date' do |date|
@@ -15,5 +16,5 @@ get '/api/scores/:date' do |date|
 end
 
 get '/api/match/:id' do |id|
-  "Looking for stats for a specific match: #{id}"
+  MatchStatsParser::get_match_statistics(id).to_json
 end

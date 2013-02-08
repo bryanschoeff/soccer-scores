@@ -1,6 +1,6 @@
 require_relative 'fetcher'
 
-class ResultsParser
+class CurrentResultsParser
 
   def self.get_current_scores
     page = Fetcher::fetch_current_scores
