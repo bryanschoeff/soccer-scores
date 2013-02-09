@@ -12,7 +12,7 @@ get '/api/scores' do
 end
 
 get '/api/scores/:date' do |date|
-  "Looking for scores for a specific date: #{date}"
+  ResultsParser::get_scores_for_date(date).to_json
 end
 
 get '/api/match/:id' do |id|
