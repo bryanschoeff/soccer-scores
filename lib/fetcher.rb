@@ -8,7 +8,7 @@ class Fetcher
     Nokogiri::HTML(open("http://soccernet.espn.go.com/scores?cc=5901"), nil, 'UTF-8')
   end
 
-  def self.get_match_statistics(match_id)
+  def self.fetch_match_statistics(match_id)
     Nokogiri::HTML(open("http://espnfc.com/us/en/gamecast/statistics/id/#{match_id}/statistics.html?soccernet=true&cc=5901"), nil, 'UTF-8')
   end
 

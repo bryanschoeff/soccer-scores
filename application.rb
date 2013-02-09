@@ -1,6 +1,6 @@
 require 'sinatra'
 require 'json'
-require_relative 'lib/current_results_parser'
+require_relative 'lib/results_parser'
 require_relative 'lib/match_stats_parser'
 
 get '/' do
@@ -8,7 +8,7 @@ get '/' do
 end
 
 get '/api/scores' do
-  CurrentResultsParser::get_current_scores.to_json
+  ResultsParser::get_current_scores.to_json
 end
 
 get '/api/scores/:date' do |date|

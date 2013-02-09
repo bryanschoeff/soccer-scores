@@ -3,43 +3,38 @@ require_relative 'fetcher'
 class MatchStatsParser
 
   def self.get_match_statistics(match_id)
-    results = {home_stats: {}, away_stats: {}}
-    match_stats = Fetcher::get_match_statistics(match_id)
+    results = {}
+    match_stats = Fetcher::fetch_match_statistics(match_id)
 
-    results[:home_team] = match_stats.css('div.team.away p.team-name a').text
-    results[:away_team] = match_stats.css('div.team.home p.team-name a').text
-    results[:home_score] = match_stats.css('div.score-time p.score').text.split('-')[0].strip
-    results[:away_score] = match_stats.css('div.score-time p.score').text.split('-')[1].strip
-    results[:status] = match_stats.css('div.score-time p.time').text
+    if match_stats.text != ''
+      results[:home_team] = match_stats.css('div.team.away p.team-name a').text
+      results[:away_team] = match_stats.css('div.team.home p.team-name a').text
+      results[:home_score] = match_stats.css('div.score-time p.score').text.split('-')[0].strip if match_stats.css('div.score-time p.score').text.split('-')[0]
+      results[:away_score] = match_stats.css('div.score-time p.score').text.split('-')[1].strip if match_stats.css('div.score-time p.score').text.split('-')[1]
+      results[:status] = match_stats.css('div.score-time p.time').text
 
-    # this could be refactored to be more DRY; it doesn't seem necessary right now
-    results[:home_stats][:shots] = match_stats.css('#home-shots').text
-    results[:home_stats][:fouls] = match_stats.css('#home-fouls').text
-    results[:home_stats][:corner_kicks] = match_stats.css('#home-corner-kicks').text
-    results[:home_stats][:offsides] = match_stats.css('#home-offsides').text
-    results[:home_stats][:time_of_possession] = match_stats.css('#home-possession').text
-    results[:home_stats][:yellow_cards] = match_stats.css('#home-yellow-cards').text
-    results[:home_stats][:red_cards] = match_stats.css('#home-red-cards').text
-    results[:home_stats][:saves] = match_stats.css('#home-saves').text
-
-    results[:home_stats][:player_stats] = get_players_stats(match_stats.css('h1#home-team + table'))
-
-    results[:away_stats][:shots] = match_stats.css('#away-shots').text
-    results[:away_stats][:fouls] = match_stats.css('#away-fouls').text
-    results[:away_stats][:corner_kicks] = match_stats.css('#away-corner-kicks').text
-    results[:away_stats][:offsides] = match_stats.css('#away-offsides').text
-    results[:away_stats][:time_of_possession] = match_stats.css('#away-possession').text
-    results[:away_stats][:yellow_cards] = match_stats.css('#away-yellow-cards').text
-    results[:away_stats][:red_cards] = match_stats.css('#away-red-cards').text
-    results[:away_stats][:saves] = match_stats.css('#away-saves').text
-
-    results[:away_stats][:player_stats] = get_players_stats(match_stats.css('h1#away-team + table'))
-
+      results[:home_stats] = get_team_stats(match_stats, 'home')
+      results[:away_stats] = get_team_stats(match_stats, 'away')
+    end
     results
-
   end
 
   private
+
+  def self.get_team_stats(match_stats, team)
+    stats = {}
+    stats[:shots] = match_stats.css("##{team}-shots").text
+    stats[:fouls] = match_stats.css("##{team}-fouls").text
+    stats[:corner_kicks] = match_stats.css("##{team}-corner-kicks").text
+    stats[:offsides] = match_stats.css("##{team}-offsides").text
+    stats[:time_of_possession] = match_stats.css("##{team}-possession").text
+    stats[:yellow_cards] = match_stats.css("##{team}-yellow-cards").text
+    stats[:red_cards] = match_stats.css("##{team}-red-cards").text
+    stats[:saves] = match_stats.css("##{team}-saves").text
+
+    stats[:player_stats] = get_players_stats(match_stats.css("h1##{team}-team + table"))
+    stats
+  end
 
   def self.get_players_stats(players_html)
     players_stats = Array.new
