@@ -51,7 +51,8 @@ class ResultsParser
     match[:away_team] = match_html.css('td.away_team').text
     match[:home_score] = match_html.css('td.scores a').text.split('-')[0].to_s.gsub(nbsp, '').to_i
     match[:away_score] = match_html.css('td.scores a').text.split('-')[1].to_s.gsub(nbsp, '').to_i
-    match[:url] = match_html.css('td.scores a').attr('href').content if match_html.css('td.scores a').attr('')
+    match[:url] = match_html.css('td.scores a').attr('href').content if match_html.css('td.scores a').attr('href')
+    match[:id] = /(\d*?)\/\w*?\.html/.match(match[:url]).captures[0] if match[:url] != ""
 
     match
   end

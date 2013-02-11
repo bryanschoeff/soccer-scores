@@ -45,12 +45,12 @@ describe ResultsParser do
     end
 
     it 'should return an array of length 1 for a single match' do
-      results = prepare_matches('<tr id="test"><td class="scores"><a href="testURL"></a></td></tr>')
+      results = prepare_matches('<tr id="test"><td class="scores"><a href="12345/test.html"></a></td></tr>')
       results.length.should eq(1)
     end
 
     it 'should return an array of length 3 for 3 minimal matches' do
-      results = prepare_matches('<tr id="test"><td class="scores"><a href="testURL"></a></td></tr><tr id="test"><td class="scores"><a href="testURL"></a></td></tr><tr id="test"><td class="scores"><a href="testURL"></a></td></tr>')
+      results = prepare_matches('<tr id="test"><td class="scores"><a href="12345/test.html"></a></td></tr><tr id="test"><td class="scores"><a href="12345/test.html"></a></td></tr><tr id="test"><td class="scores"><a href="12345/test.html"></a></td></tr>')
       results.length.should eq(3)
     end
 
@@ -59,9 +59,9 @@ describe ResultsParser do
   describe '.get_match' do
 
     it 'should return an appropriate single match for a minimal match' do
-      match = Nokogiri::HTML('<td class="home_team">Home</td><td class="away_team">Away</td><td class="scores"><a href="">0-0</a></td><td class="scores"><a href="testURL"></a></td>')
+      match = Nokogiri::HTML('<td class="home_team">Home</td><td class="away_team">Away</td><td class="scores"><a href="12345/test.html">0-0</a></td><td class="scores"><a href="testURL"></a></td>')
       results = ResultsParser::get_match(match)
-      results.should eq({home_team: 'Home', away_team: 'Away', home_score: 0, away_score: 0, status: "" })
+      results.should eq({home_team: 'Home', away_team: 'Away', home_score: 0, away_score: 0, status: "", url: "12345/test.html", id: "12345" })
     end
 
   end

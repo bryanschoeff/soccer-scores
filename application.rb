@@ -3,10 +3,6 @@ require 'json'
 require_relative 'lib/results_parser'
 require_relative 'lib/match_stats_parser'
 
-get '/' do
-  'Up and running'
-end
-
 get '/api/scores' do
   ResultsParser::get_current_scores.to_json
 end

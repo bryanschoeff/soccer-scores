@@ -9,8 +9,8 @@ class MatchStatsParser
     if match_stats.text != ''
       results[:home_team] = match_stats.css('div.team.away p.team-name a').text
       results[:away_team] = match_stats.css('div.team.home p.team-name a').text
-      results[:home_score] = match_stats.css('div.score-time p.score').text.split('-')[0].strip if match_stats.css('div.score-time p.score').text.split('-')[0]
-      results[:away_score] = match_stats.css('div.score-time p.score').text.split('-')[1].strip if match_stats.css('div.score-time p.score').text.split('-')[1]
+      results[:home_score] = match_stats.css('div.score-time p.score').text.split('-')[0].strip.gsub('v','').to_i if match_stats.css('div.score-time p.score').text.split('-')[1]
+      results[:away_score] = match_stats.css('div.score-time p.score').text.split('-')[1].strip.to_i if match_stats.css('div.score-time p.score').text.split('-')[1]
       results[:status] = match_stats.css('div.score-time p.time').text
 
       results[:home_stats] = get_team_stats(match_stats, 'home')
@@ -24,6 +24,8 @@ class MatchStatsParser
   def self.get_team_stats(match_stats, team)
     stats = {}
     stats[:shots] = match_stats.css("##{team}-shots").text
+    stats[:shots_on_goal] = /\((\d+)\)/.match(stats[:shots]).captures[0] if stats[:shots] != ''
+    stats[:shots] = stats[:shots].gsub("(#{stats[:shots_on_goal]})", '') if stats[:shots] != ''
     stats[:fouls] = match_stats.css("##{team}-fouls").text
     stats[:corner_kicks] = match_stats.css("##{team}-corner-kicks").text
     stats[:offsides] = match_stats.css("##{team}-offsides").text
@@ -38,12 +40,12 @@ class MatchStatsParser
 
   def self.get_players_stats(players_html)
     players_stats = Array.new
-    line_up = 'Line-Up'
+    line_up = 'lineup'
 
-    players_html.css('tbody tr').each do |table_row|
+    players_html.css('tbody tr[class]').each do |table_row|
 
       if (table_row.css('th').count == 1)
-        line_up = table_row.css('th').text.strip
+        line_up = table_row.css('th').text.strip[0..2]
       elsif (table_row.css('th').count == 0)
         players_stats << get_player_stats(table_row, line_up)
       end
@@ -70,6 +72,7 @@ class MatchStatsParser
     player_stats[:yellow_cards] = stat_columns[11].text.strip if stat_columns[11]
     player_stats[:red_cards] = stat_columns[12].text.strip if stat_columns[12]
 
+    player_stats.each { |key, value| player_stats[key].gsub!('-','') }
     player_stats
   end
 
