@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Scores</title>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+  <script src="/scripts/handlebars.js"></script>
+  <style type="text/css">
+    li span { display: inline-block; padding: 0 5px; }
+    ul#scores-list { margin: 0; padding: 0; }
+    li.league-name { list-style: none; margin: 0; padding: 0; }
+    li.league-name h2 { margin: 3px 0;  padding: 3px; display: block; background: #555; color: #ddd; font-size: 16px; font-weight: normal; }
+    li.league-name ul { margin: 0; padding: 0;  }
+    li.league-name ul li { list-style: none; margin: 0; padding: 0; }
+    span.match-status { display: inline-block; width: 80px; }
+
+    .alternating { background: #eef; }
+
+    div#match-header { width: 500px; background: #eee; font-size: 18px; font-weight: bold; padding: 20px; text-align: center; border-bottom: 3px solid #005; }
+    a#match-close { position: fixed; top: 20px; left: 545px; }
+    div#match-stats { padding: 20px; }
+    div#match-details { position: fixed; top: 20px; left: 20px; margin: 20px; background: #ddd; border: 1px solid #000; max-height: 90%; overflow: scroll; }
+    div#match-header span.home-team { display: inline-block; width: 200px; }
+    div#match-header span.away-team { display: inline-block; width: 200px; }
+    div#match-header span.score { display: inline-block; width: 90px; }
+    span.stat-home { display: inline-block; width: 190px; text-align: center; }
+    span.stat-away { display: inline-block; width: 190px; text-align: center; }
+    span.stat-name { display: inline-block; width: 100px; text-align: right; margin-right: 3px; }
+
+    div.stats-players-team { cursor: pointer; background: #555; color: #ddd; padding: 3px; margin-top: 10px; }
+    div#screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: transparent url(images/screen.png) repeat;}
+  </style>
+</head>
+<body>
+  <h1>soccer scores</h1>
+  <div id="date-links">
+    <a href="javascript:void(0)" id="date-yesterday"></a>
+    <span id="date-today"></span>
+    <a href="javascript:void(0)" id="date-tomorrow"></a>
+  </div>
+  <div id="scores">
+  </div>
+  <div id="screen"></div>
+  <div id="match-details">
+  </div>
+  <a href="javascript:void(0)" id="match-close">close</a>
+</body>
+<script type="text/javascript">
+var matchScores = {};
+
+matchScores.yyyymmdd = function(date) {
+  var yyyy = date.getFullYear().toString();
+  var mm = (date.getMonth()+1).toString(); // getMonth() is zero-based
+  var dd  = date.getDate().toString();
+  return yyyy + (mm[1]?mm:"0"+mm[0]) + (dd[1]?dd:"0"+dd[0]); // padding
+};
+
+matchScores.md = function(date) {
+  var mm = (date.getMonth()+1).toString(); 
+  var dd  = date.getDate().toString();
+  return mm + '/' + dd;
+};
+
+matchScores.loadDateLink = function (linkid, date) {
+  $('#' + linkid).attr('data-linkdate', matchScores.yyyymmdd(date));
+  $('#' + linkid).html(matchScores.md(date));
+};
+
+matchScores.loadDateLinks = function (today) {
+  today = typeof today !== 'undefined' ? today : new Date();
+  var yesterday = new Date();
+  var tomorrow = new Date();
+
+  yesterday.setDate(today.getDate()-1);
+  tomorrow.setDate(today.getDate()+1);
+
+  matchScores.loadDateLink('date-today', today);
+  matchScores.loadDateLink('date-yesterday', yesterday);
+  matchScores.loadDateLink('date-tomorrow', tomorrow);
+
+  matchScores.bindDateLinks();
+};
+
+matchScores.loadResults = function() {
+  $.getJSON('/api/scores', function (data) {
+    data = { leagues: data };
+    var template = Handlebars.compile($('#scores-template').html());
+    $('#scores').html(template(data));
+    $('li.league-name').each( function() {
+      $(this).find('li.league-match:odd').addClass('alternating')
+    });
+    matchScores.bindLinks();
+  });
+};
+
+matchScores.loadResultsByDate = function(dateString) {
+  $.getJSON('/api/scores/' + dateString, function (data) {
+    data = { leagues: data };
+    var template = Handlebars.compile($('#scores-template').html());
+    $('#scores').html(template(data));
+    $('li.league-name').each( function() {
+      $(this).find('li.league-match:odd').addClass('alternating')
+    });
+    matchScores.bindLinks();
+    var newDate = new Date();
+    newDate.setDate(dateString.slice(6,8));
+    newDate.setMonth(dateString.slice(4,6)-1);
+    newDate.setYear(dateString.slice(0,4));
+    matchScores.loadDateLinks(newDate);
+  });
+};
+
+matchScores.loadMatchData = function (matchId) {
+  $.getJSON('/api/match/' + matchId, function(data) {
+    var template = Handlebars.compile($('#match-template').html());
+    $('#match-details').html(template(data));
+    matchScores.showMatchDetail();
+  });
+};
+
+matchScores.bindDateLinks = function() {
+  $('#date-links a').click( function () {
+    var dateString = $(this).attr('data-linkdate');
+    matchScores.loadResultsByDate(dateString);
+  });
+};
+
+matchScores.bindLinks = function() {
+  $('a.match').click( function () {
+    var matchId = $(this).attr('data-match-id');
+    matchScores.loadMatchData(matchId);
+  });
+};
+
+matchScores.hideMatchDetail = function() {
+  $('#screen').hide();
+  $('#match-details').hide();
+  $('#match-close').hide();
+};
+
+matchScores.showMatchDetail = function() {
+  $('#screen').show();
+  $('#match-details').show();
+  $('#match-close').show();
+  $('.stats-players table').hide();
+  $('.stats-players-team').click( function () {
+    $(this).next().toggle();
+  });
+};
+
+$(document).ready( function () {
+  matchScores.loadResults();
+  matchScores.hideMatchDetail();
+
+  $('#match-close').click( function() {
+    matchScores.hideMatchDetail();
+  });
+
+  matchScores.loadDateLinks();
+
+});
+</script>
+<script id="scores-template" type="text/x-handlebars-template">
+<ul id="scores-list">
+{{#each leagues}}
+<li class="league-name"><h2>{{name}}</h2>
+<ul class="league-matches">
+  {{#each matches}}<li class="league-match"><a href="javascript:void(0)" class="match" data-match-id="{{id}}"><span class="match-status">{{status}}</span><span class="home-team">{{home_team}}</span><span class="home-score">{{home_score}}</span><span class="away-team">{{away_team}}</span><span class="away-score">{{away_score}}</span></a></li>{{/each}}
+</ul>
+</li>
+{{/each}}
+</ul>
+</script>
+<script id="match-template" type="text/x-handlebars-template">
+<div id="match-header">
+  <span class="home-team">{{home_team}}</span>
+  <span class="score">{{home_score}}-{{away_score}}</span>
+  <span class="away-team">{{away_team}}</span></div>
+<div id="match-stats">
+  <div class="stats-row">
+    <span class="stat-name">&nbsp;</span>
+    <span class="stat-home">{{home_team}}</span>
+    <span class="stat-away">{{away_team}}</span>
+  </div>
+  <div class="stats-row">
+    <span class="stat-name">shots</span>
+    <span class="stat-home">{{home_stats.shots}}</span>
+    <span class="stat-away">{{away_stats.shots}}</span>
+  </div>
+  <div class="stats-row">
+    <span class="stat-name">shots on goal</span>
+    <span class="stat-home">{{home_stats.shots_on_goal}}</span>
+    <span class="stat-away">{{away_stats.shots_on_goal}}</span>
+  </div>
+  <div class="stats-row">
+    <span class="stat-name">fouls</span>
+    <span class="stat-home">{{home_stats.fouls}}</span>
+    <span class="stat-away">{{away_stats.fouls}}</span>
+  </div>
+  <div class="stats-row">
+    <span class="stat-name">corner kicks</span>
+    <span class="stat-home">{{home_stats.corner_kicks}}</span>
+    <span class="stat-away">{{away_stats.corner_kicks}}</span>
+  </div>
+  <div class="stats-row">
+    <span class="stat-name">offsides</span>
+    <span class="stat-home">{{home_stats.offsides}}</span>
+    <span class="stat-away">{{away_stats.offsides}}</span>
+  </div>
+  <div class="stats-row">
+    <span class="stat-name">possession</span>
+    <span class="stat-home">{{home_stats.time_of_possession}}</span>
+    <span class="stat-away">{{away_stats.time_of_possession}}</span>
+  </div>
+  <div class="stats-row">
+    <span class="stat-name">yellow cards</span>
+    <span class="stat-home">{{home_stats.yellow_cards}}</span>
+    <span class="stat-away">{{away_stats.yellow_cards}}</span>
+  </div>
+  <div class="stats-row">
+    <span class="stat-name">red cards</span>
+    <span class="stat-home">{{home_stats.red_cards}}</span>
+    <span class="stat-away">{{away_stats.red_cards}}</span>
+  </div>
+  <div class="stats-row">
+    <span class="stat-name">saves</span>
+    <span class="stat-home">{{home_stats.saves}}</span>
+    <span class="stat-away">{{away_stats.saves}}</span>
+  </div>
+  <div class="stats-players">
+    <div class="stats-players-team">{{home_team}}</div>
+    <table>
+      <thead>
+        <tr>
+          <th>&nbsp;</th><th>&nbsp;</th><th>&nbsp;</th><th>&nbsp;</th><th title="shots">SH</th><th>SG</th><th>GL</th><th>AS</th><th>OS</th><th>FD</th><th>FC</th><th>SV</th><th>YC</th><th>RC</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each home_stats.player_stats}}
+        <tr>
+          <td>{{line_up}}</td><td>{{position}}</td><td>{{number}}</td><td>{{name}}</td><td>{{shots}}</td><td>{{shots_on_goal}}</td><td>{{goals}}</td><td>{{assists}}</td><td>{{offsides}}</td><td>{{fouls_drawn}}</td><td>{{fouls_committed}}</td><td>{{saves}}</td><td>{{yellow_cards}}</td><td>{{red_cards}}</td><td></td>
+        </tr>
+        {{/each}}
+      <tbody>
+    </table>
+    <div class="stats-players-team">{{away_team}}</div>
+    <table>
+      <thead>
+        <tr>
+          <th>&nbsp;</th><th>&nbsp;</th><th>&nbsp;</th><th>&nbsp;</th><th title="shots">SH</th><th>SG</th><th>GL</th><th>AS</th><th>OS</th><th>FD</th><th>FC</th><th>SV</th><th>YC</th><th>RC</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each away_stats.player_stats}}
+        <tr>
+          <td>{{line_up}}</td><td>{{position}}</td><td>{{number}}</td><td>{{name}}</td><td>{{shots}}</td><td>{{shots_on_goal}}</td><td>{{goals}}</td><td>{{assists}}</td><td>{{offsides}}</td><td>{{fouls_drawn}}</td><td>{{fouls_committed}}</td><td>{{saves}}</td><td>{{yellow_cards}}</td><td>{{red_cards}}</td><td></td>
+        </tr>
+        {{/each}}
+      <tbody>
+    </table>
+  <div>
+</div>
+</script>
+</html>
